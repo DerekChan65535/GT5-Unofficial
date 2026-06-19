@@ -2,12 +2,17 @@ package gregtech.common.blocks;
 
 import static java.lang.Math.abs;
 
+import java.util.List;
+
 import javax.annotation.Nullable;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.Entity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.AxisAlignedBB;
@@ -25,6 +30,7 @@ import gregtech.api.interfaces.IItemContainer;
 public class BlockPad extends Block {
 
     protected String unlocalizedName;
+    protected int subTypes = 0;
 
     public BlockPad() {
         this(ItemBlockPad.class, "gt.blockpad", Material.cloth);
@@ -54,7 +60,15 @@ public class BlockPad extends Block {
         };
     }
 
+    @Override
+    public void getSubBlocks(final Item item, final CreativeTabs tab, final List<ItemStack> list) {
+        for (int i = 0; i < this.subTypes; i++) {
+            list.add(new ItemStack(item, 1, i));
+        }
+    }
+
     protected final void register(int meta, @Nullable IItemContainer container) {
+        this.subTypes++;
         ItemStack stack = new ItemStack(this, 1, meta);
 
         if (container != null) {
@@ -64,31 +78,34 @@ public class BlockPad extends Block {
 
     @Override
     public void onEntityCollidedWithBlock(World world, int x, int y, int z, Entity entity) {
+        // first of all, make sure it's actually collidiing. Stops the sticky pad working when you're on a slab, for
+        // example.
         if (!entity.boundingBox.intersectsWith(getCollisionBoundingBox(world, x, y, z))) return;
         int meta = world.getBlockMetadata(x, y, z);
         switch (meta) {
             case 0 -> {
                 // bounce pad
                 // too weakly supported, it breaks
-                if (supportedSides(world, x, y, z) < 2) {
+                int supports = supportedSides(world, x, y, z);
+                if (supports < 2) {
                     this.dropBlockAsItem(world, x, y, z, meta, 0);
                     world.setBlockToAir(x, y, z);
                     break;
-                }
+                } else if (supports == 99) break;
 
                 float fallDist = entity.fallDistance;
                 float motionMult = 0.35F;
 
-                if (fallDist > 0F && fallDist <= 11F) {
+                if (fallDist > 0.75F && fallDist <= 15F) {
                     if (entity instanceof EntityPlayerSP player) {
-                        if (player.movementInput.jump) {
+                        if (Minecraft.getMinecraft().gameSettings.keyBindJump.getIsKeyPressed()) {
                             motionMult = 1.25F;
                         }
                     }
                     // bounce back 1/3 as high, but if player is holding jump, jump a little higher than fall
                     entity.addVelocity(0, abs(entity.motionY) * motionMult, 0);
                     entity.fallDistance = 0.0F;
-                } else if (fallDist > 11F) {
+                } else if (fallDist > 15F) {
                     this.dropBlockAsItem(world, x, y, z, meta, 0);
                     world.setBlockToAir(x, y, z);
                     // break fall a bit.
@@ -100,7 +117,7 @@ public class BlockPad extends Block {
                 // sticky pad
                 entity.motionZ *= 0.25F;
                 entity.motionX *= 0.25F;
-                entity.motionY *= .5F;
+                if (entity.fallDistance < 1) entity.motionY *= .5F;
             }
         }
     }
@@ -116,22 +133,23 @@ public class BlockPad extends Block {
             (double) y + this.minY,
             (double) z + this.minZ,
             (double) x + this.maxX,
-            (double) y + this.maxY,
+            (double) y + this.maxY * 2, // need some space for entity to collide with.
             (double) z + this.maxZ);
     }
 
     @Override
     public boolean canBlockStay(World worldIn, int x, int y, int z) {
-        // check all four sides for supports
-        for (int i = -1; i <= 1 && worldIn.getBlockMetadata(x, y, z) != 1; i += 2) {
+        int meta = worldIn.getBlockMetadata(x, y, z);
+        // check all four sides for supports for trampoline. Needs space for give.
+        for (int i = -1; i <= 1 && meta == 0; i += 2) {
             for (int j = -1; j <= 1; j += 2) {
                 if (!worldIn.isAirBlock(x + i, y, z + j)) {
                     return true;
                 }
             }
         }
-        // If on bottom
-        return !worldIn.isAirBlock(x, y - 1, z);
+        // Sticky pad only if on bottom
+        return !worldIn.isAirBlock(x, y - 1, z) && meta == 1;
     }
 
     public int supportedSides(World worldIn, int x, int y, int z) {
