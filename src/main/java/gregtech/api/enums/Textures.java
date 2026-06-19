@@ -689,7 +689,10 @@ public class Textures {
             BLOCK_TSREIN = create("BLOCK_TSREIN"),
             BLOCK_POWDER = create("BLOCK_POWDER"),
 
+            // IC2 Replacements
             BLOCK_IRON_FENCE = create("BLOCK_IRON_FENCE"),
+            BLOCK_BOUNCE_PAD = create("BLOCK_BOUNCE_PAD"),
+            BLOCK_STICKY_PAD = create("BLOCK_STICKY_PAD"),
 
             OVERLAY_LOCKER = createOptional("OVERLAY_LOCKER"),
             OVERLAY_LOCKER_000 = createOptional("OVERLAY_LOCKER_000"),
