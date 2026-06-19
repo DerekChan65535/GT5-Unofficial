@@ -38,7 +38,6 @@ public class PosteaTransformers implements Runnable {
         registerPotassiumHydroxideTransformer();
         registerPTMEGTransformers();
         registerBorosilicateGlassTransformers();
-        registerIC2BlocksTransformer();
     }
 
     private static NBTTagCompound passthrough(NBTTagCompound tag) {
@@ -49,8 +48,13 @@ public class PosteaTransformers implements Runnable {
         // These are used to convert ic2 blocks to their new counterparts.
         // I.e. Reinforced glass, iron fences, etc.
 
+        // iron fence
         ItemStackReplacementManager.addSimpleReplacement("IC2:blockFenceIron", ItemList.FenceIron.get(1L));
         BlockReplacementManager.addSimpleReplacement("IC2:blockFenceIron", Casings.IronFence.getBlock(), 0);
+        // reinfoced glass
+        ItemStackReplacementManager.addSimpleReplacement("IC2:blockAlloyGlass", ItemList.ReinforcedGlass.get(1L));
+        BlockReplacementManager.addSimpleReplacement("IC2:blockAlloyGlass", GregTechAPI.sBlockGlass1, 10);
+        BlockReplacementManager.addSimpleReplacement("IC2:glassReinforced", GregTechAPI.sBlockGlass1, 10);
     }
 
     private void registerFrameboxTransformers() {
